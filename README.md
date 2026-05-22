@@ -18,7 +18,6 @@
 - [Project Structure](#project-structure)
 - [User Roles](#user-roles)
 - [Scope & Limitations](#scope--limitations)
-- [Team](#team)
 
 ---
 
