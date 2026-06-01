@@ -68,7 +68,7 @@ Traditional hospital systems suffer from long waiting times, poor scheduling, an
 | Layer      | Technology                  |
 |------------|-----------------------------|
 | Frontend   | HTML, CSS, JavaScript       |
-| Backend    | JavaScript (API-based)      |
+| Backend    | JavaScript (API-based)  (java)    |
 | Database   | To be confirmed             |
 | Hosting    | AWS / Azure (cloud)         |
 | Security   | Role-based access, encryption, session management |
