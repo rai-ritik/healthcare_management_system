@@ -1,0 +1,426 @@
+
+
+
+  <meta>
+  <meta>
+  <title>Patient Dashboard - HEA Healthcare
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; color: #1e293b; }
+
+    /* NAVBAR */
+    .navbar {
+      background: white; height: 64px;
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .brand { font-size: 1.3rem; font-weight: 700; color: #2563eb; display: flex; align-items: center; gap: 8px; }
+    .brand span { background: #2563eb; color: white; padding: 3px 10px; border-radius: 6px; font-size: 0.85rem; }
+    .nav-right { display: flex; align-items: center; gap: 1rem; }
+    .user-info { font-size: 0.875rem; color: #374151; font-weight: 600; }
+    .logout-btn {
+      background: #fee2e2; color: #991b1b; border: none;
+      padding: 6px 14px; border-radius: 6px; cursor: pointer;
+      font-size: 0.82rem; font-weight: 600; transition: all 0.2s;
+    }
+    .logout-btn:hover { background: #fca5a5; }
+
+    /* LAYOUT */
+    .layout { display: flex; min-height: calc(100vh - 64px); }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 230px; background: #1e293b;
+      padding: 1rem 0; flex-shrink: 0;
+      position: sticky; top: 64px;
+      height: calc(100vh - 64px); overflow-y: auto;
+    }
+    .sidebar-user { padding: 1rem 1.2rem; border-bottom: 1px solid #334155; margin-bottom: 0.5rem; }
+    .avatar {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: linear-gradient(135deg,#3b82f6,#6366f1);
+      color: white; display: flex; align-items: center;
+      justify-content: center; font-weight: 700;
+      font-size: 1rem; margin-bottom: 8px;
+    }
+    .sidebar-name { font-size: 0.875rem; font-weight: 600; color: #f1f5f9; }
+    .sidebar-role { font-size: 0.75rem; color: #94a3b8; }
+    .nav-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0.7rem 1.2rem; color: #94a3b8;
+      text-decoration: none; font-size: 0.875rem;
+      font-weight: 500; transition: all 0.2s;
+      border-left: 3px solid transparent;
+    }
+    .nav-link:hover, .nav-link.active {
+      background: #334155; color: #f1f5f9;
+      border-left-color: #3b82f6;
+    }
+    .nav-section {
+      font-size: 0.7rem; text-transform: uppercase;
+      letter-spacing: 0.8px; color: #64748b;
+      padding: 1rem 1.2rem 0.3rem; font-weight: 600;
+    }
+
+    /* MAIN */
+    .main { flex: 1; padding: 1.5rem 2rem; }
+
+    /* BANNER */
+    .banner {
+      background: linear-gradient(135deg,#1e40af,#3b82f6);
+      border-radius: 12px; padding: 1.5rem 2rem;
+      color: white; margin-bottom: 1.5rem;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .banner h2 { font-size: 1.3rem; font-weight: 700; }
+    .banner p  { font-size: 0.875rem; opacity: 0.85; margin-top: 4px; }
+    .banner .big-icon { font-size: 2.5rem; opacity: 0.7; }
+
+    /* STATS */
+    .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card {
+      background: white; border-radius: 10px;
+      padding: 1.2rem; display: flex; align-items: center;
+      gap: 1rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      border: 1px solid #f1f5f9; transition: all 0.2s;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .stat-icon {
+      width: 46px; height: 46px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; flex-shrink: 0;
+    }
+    .blue   { background: #dbeafe; }
+    .green  { background: #d1fae5; }
+    .yellow { background: #fef3c7; }
+    .red    { background: #fee2e2; }
+    .stat-num { font-size: 1.7rem; font-weight: 700; color: #1e293b; line-height: 1; }
+    .stat-lbl { font-size: 0.78rem; color: #94a3b8; margin-top: 3px; }
+
+    /* GRID */
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+
+    /* CARD */
+    .card {
+      background: white; border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      border: 1px solid #f1f5f9; overflow: hidden;
+    }
+    .card-head {
+      padding: 1rem 1.5rem; border-bottom: 1px solid #f1f5f9;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .card-head h3 { font-size: 0.95rem; font-weight: 700; color: #1e293b; }
+    .card-body { padding: 1.2rem 1.5rem; }
+    .view-all {
+      font-size: 0.8rem; color: #2563eb; text-decoration: none;
+      font-weight: 600;
+    }
+    .view-all:hover { text-decoration: underline; }
+
+    /* APPOINTMENT ITEM */
+    .appt-item {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 0.875rem 0; border-bottom: 1px solid #f8fafc;
+    }
+    .appt-item:last-child { border-bottom: none; }
+    .appt-time {
+      background: #dbeafe; color: #1d4ed8;
+      border-radius: 8px; padding: 5px 10px;
+      font-size: 0.78rem; font-weight: 700;
+      text-align: center; min-width: 58px; flex-shrink: 0;
+    }
+    .appt-name { font-size: 0.875rem; font-weight: 600; color: #1e293b; }
+    .appt-sub  { font-size: 0.78rem; color: #94a3b8; margin-top: 2px; }
+    .pill {
+      margin-left: auto; padding: 2px 10px;
+      border-radius: 999px; font-size: 0.72rem; font-weight: 600;
+    }
+    .pill-blue   { background: #dbeafe; color: #1d4ed8; }
+    .pill-green  { background: #d1fae5; color: #065f46; }
+    .pill-red    { background: #fee2e2; color: #991b1b; }
+    .pill-yellow { background: #fef3c7; color: #92400e; }
+
+    /* QUICK ACTIONS */
+    .actions { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .action-btn {
+      background: white; border: 2px solid #e5e7eb;
+      border-radius: 10px; padding: 1.2rem 1rem;
+      text-align: center; cursor: pointer;
+      transition: all 0.2s; text-decoration: none;
+      color: inherit; display: block;
+    }
+    .action-btn:hover {
+      border-color: #2563eb; background: #dbeafe;
+      transform: translateY(-2px);
+    }
+    .action-icon { font-size: 1.5rem; margin-bottom: 6px; }
+    .action-lbl  { font-size: 0.8rem; font-weight: 600; color: #374151; }
+
+    /* EMPTY */
+    .empty { text-align: center; padding: 2rem; color: #94a3b8; font-size: 0.875rem; }
+    .empty .empty-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+
+    /* LOADING */
+    .loading { text-align: center; padding: 2rem; color: #94a3b8; }
+
+    @media(max-width:1024px){ .stats { grid-template-columns: repeat(2,1fr); } .grid2 { grid-template-columns: 1fr; } }
+    @media(max-width:768px) { .sidebar { display: none; } .main { padding: 1rem; } .actions { grid-template-columns: repeat(2,1fr); } }
+    @media(max-width:480px) { .stats { grid-template-columns: 1fr 1fr; } }
+  
+
+
+
+
+<nav>
+  🏥 HEA Patient
+  
+    👤 Loading...
+    🚪 Logout
+  
+</nav>
+
+
+
+  
+  <aside>
+    
+      P
+      Patient
+      Patient Account
+    
+    Main Menu
+    🏠 Dashboard
+    📅 Appointments
+    📋 Medical Records
+    Account
+    👤 My Profile
+    🚪 Logout
+  </aside>
+
+  
+  <main>
+
+    
+    
+      
+        Good Morning! 👋
+        Welcome to your health dashboard
+      
+      🏥
+    
+
+    
+    
+      
+        📅
+        
+          -
+          Total Appointments
+        
+      
+      
+        ✅
+        
+          -
+          Completed
+        
+      
+      
+        ⏳
+        
+          -
+          Upcoming
+        
+      
+      
+        📋
+        
+          -
+          Medical Records
+        
+      
+    
+
+    
+    
+      
+        📅
+        Book Appointment
+      
+      
+        📋
+        Medical Records
+      
+      
+        👤
+        My Profile
+      
+      
+        🔔
+        Notifications
+      
+    
+
+    
+    
+
+      
+      
+        
+          📅 Upcoming Appointments
+          View All →
+        
+        
+          Loading appointments...
+        
+      
+
+      
+      
+        
+          📋 Recent Medical Records
+          View All →
+        
+        
+          Loading records...
+        
+      
+
+    
+  </main>
+
+
+<script>
+  const API = 'http://localhost:4000/api';
+
+  // ---- Check Auth ----
+  const token = localStorage.getItem('hea_token');
+  const user  = JSON.parse(localStorage.getItem('hea_user') || 'null');
+
+  if (!token || !user) {
+    window.location.href = 'login.html';
+  }
+
+  if (user && user.role !== 'patient') {
+    if (user.role === 'admin')  window.location.href = 'admin-dashboard.html';
+    if (user.role === 'doctor') window.location.href = 'doctor-dashboard.html';
+  }
+
+  // ---- Set User Info ----
+  if (user) {
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+    document.getElementById('nav-name').textContent      = user.name;
+    document.getElementById('sidebar-name').textContent  = user.name;
+    document.getElementById('sidebar-avatar').textContent = initials;
+
+    const hour = new Date().getHours();
+    const greet = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+    document.getElementById('greeting').textContent = `${greet}, ${user.name.split(' ')[0]}! 👋`;
+  }
+
+  // ---- Logout ----
+  function logout() {
+    localStorage.removeItem('hea_token');
+    localStorage.removeItem('hea_user');
+    window.location.href = 'login.html';
+  }
+
+  // ---- Format Date ----
+  function fmtDate(d) {
+    if (!d) return 'N/A';
+    return new Date(d).toLocaleDateString('en-US',{ month:'short', day:'numeric', year:'numeric' });
+  }
+
+  function fmtTime(t) {
+    if (!t) return '';
+    const [h, m] = t.split(':');
+    const hr = parseInt(h);
+    return `${hr % 12 || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`;
+  }
+
+  function pillClass(status) {
+    const map = { scheduled:'pill-blue', completed:'pill-green', cancelled:'pill-red', pending:'pill-yellow' };
+    return map[status] || 'pill-blue';
+  }
+
+  // ---- Load Dashboard ----
+  async function loadDashboard() {
+    try {
+      const res  = await fetch(`${API}/patient/dashboard`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        // Stats
+        const s = data.data.stats || {};
+        document.getElementById('stat-total').textContent     = s.total || 0;
+        document.getElementById('stat-completed').textContent = s.completed || 0;
+        document.getElementById('stat-upcoming').textContent  = s.upcoming || 0;
+        document.getElementById('stat-records').textContent   = (data.data.recentRecords || []).length;
+
+        // Appointments
+        const appts = data.data.upcomingAppointments || [];
+        const apptEl = document.getElementById('appointments-list');
+        if (appts.length === 0) {
+          apptEl.innerHTML = `
+            <div class="empty">
+              <div class="empty-icon">📅</div>
+              <p>No upcoming appointments</p>
+              <a href="appointments.html" style="color:#2563eb;font-weight:600;font-size:0.85rem;">Book one now →</a>
+            </div>`;
+        } else {
+          apptEl.innerHTML = appts.map(a => `
+            <div class="appt-item">
+              <div class="appt-time">${fmtTime(a.appointment_time)}<br/><span style="font-size:0.65rem;">${fmtDate(a.appointment_date)}</span></div>
+              <div>
+                <div class="appt-name">Dr. ${a.doctor_name || 'N/A'}</div>
+                <div class="appt-sub">${a.specialization || 'General'} • ${a.department_name || ''}</div>
+              </div>
+              <span class="pill ${pillClass(a.status)}">${a.status}</span>
+            </div>`).join('');
+        }
+
+        // Records
+        const recs  = data.data.recentRecords || [];
+        const recEl = document.getElementById('records-list');
+        if (recs.length === 0) {
+          recEl.innerHTML = `
+            <div class="empty">
+              <div class="empty-icon">📋</div>
+              <p>No medical records yet</p>
+            </div>`;
+        } else {
+          recEl.innerHTML = recs.map(r => `
+            <div class="appt-item">
+              <div class="appt-time" style="background:#d1fae5;color:#065f46;">📋</div>
+              <div>
+                <div class="appt-name">${r.diagnosis || 'Checkup'}</div>
+                <div class="appt-sub">Dr. ${r.doctor_name || 'N/A'} • ${fmtDate(r.created_at)}</div>
+              </div>
+            </div>`).join('');
+        }
+      }
+    } catch (err) {
+      console.error('Dashboard error:', err);
+      document.getElementById('appointments-list').innerHTML =
+        '<div class="empty"><p>⚠️ Could not load data</p></div>';
+      document.getElementById('records-list').innerHTML =
+        '<div class="empty"><p>⚠️ Could not load data</p></div>';
+    }
+  }
+
+  function loadNotifications() {
+    alert('🔔 Notifications feature coming soon!');
+  }
+
+  // Load on page ready
+  loadDashboard();
+
+
+

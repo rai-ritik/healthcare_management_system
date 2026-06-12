@@ -1,16 +1,11 @@
 const express = require('express');
 const router = express.Router();
+const c = require('../controllers/appointmentController');
 
-const appointmentController = require('../controllers/appointmentController');
-const { authenticate } = require('../middleware/authMiddleware');
-const { authorize } = require('../middleware/roleMiddleware');
-
-router.get('/availability', authenticate, appointmentController.getAvailability);
-router.post('/book', authenticate, authorize('patient'), appointmentController.bookAppointment);
-router.put('/:appointment_id/reschedule', authenticate, appointmentController.rescheduleAppointment);
-router.put('/:appointment_id/cancel', authenticate, appointmentController.cancelAppointment);
-router.get('/my-appointments', authenticate, appointmentController.getMyAppointments);
-router.get('/notifications', authenticate, appointmentController.getNotifications);
-router.put('/notifications/:notification_id/read', authenticate, appointmentController.markNotificationRead);
+if (c.bookAppointment)      router.post('/book', c.bookAppointment);
+if (c.cancelAppointment)    router.put('/:id/cancel', c.cancelAppointment);
+if (c.rescheduleAppointment) router.put('/:id/reschedule', c.rescheduleAppointment);
+if (c.getAvailability)      router.get('/availability', c.getAvailability);
+if (c.getAppointments)      router.get('/', c.getAppointments);
 
 module.exports = router;

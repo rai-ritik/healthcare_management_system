@@ -1,0 +1,276 @@
+
+
+
+<meta>
+<meta>
+<title>Register - HEA Healthcare
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;min-height:100vh;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;padding:20px}
+  .card{background:white;border-radius:20px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden}
+  .top{background:linear-gradient(135deg,#059669,#10b981);padding:30px;text-align:center;color:white}
+  .top .icon{font-size:48px;margin-bottom:10px}
+  .top h1{font-size:22px;font-weight:800;margin-bottom:4px}
+  .top p{font-size:13px;opacity:.85}
+  .body{padding:28px}
+  .alert{padding:12px 16px;border-radius:10px;font-size:14px;margin-bottom:16px;display:none;gap:8px;align-items:center}
+  .alert.show{display:flex}
+  .alert.success{background:#d1fae5;color:#065f46;border:1px solid #6ee7b7}
+  .alert.error{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grp{margin-bottom:16px}
+  .grp label{display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+  .wrap{position:relative}
+  .wrap input,.wrap select{width:100%;padding:12px 14px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:inherit;color:#1f2937;background:#f9fafb;transition:all .2s}
+  .wrap input:focus,.wrap select:focus{border-color:#10b981;background:white;outline:none;box-shadow:0 0 0 3px rgba(16,185,129,.15)}
+  .wrap select{appearance:none;padding-right:30px}
+  .pwrap input{padding-right:44px}
+  .eye-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:16px;cursor:pointer;color:#9ca3af;padding:0}
+  .strength{font-size:12px;font-weight:600;margin-top:4px;height:16px}
+  .chk{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#4b5563;margin-bottom:20px;cursor:pointer}
+  .chk input{width:16px;height:16px;margin-top:2px;accent-color:#10b981;flex-shrink:0}
+  .chk a{color:#10b981;font-weight:600;text-decoration:none}
+  .btn{width:100%;padding:14px;background:linear-gradient(135deg,#059669,#10b981);color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .3s;display:flex;align-items:center;justify-content:center;gap:8px}
+  .btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 20px rgba(16,185,129,.4)}
+  .btn:disabled{opacity:.7;cursor:not-allowed;transform:none}
+  .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:white;border-radius:50%;animation:spin .6s linear infinite;display:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .footer{text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid #f3f4f6;font-size:14px;color:#6b7280}
+  .footer a{color:#10b981;font-weight:700;text-decoration:none}
+  .footer a:hover{text-decoration:underline}
+  @media(max-width:480px){.row{grid-template-columns:1fr}}
+</style>
+
+
+
+
+  
+    🏥
+    Create Account
+    Join HEA Healthcare — It's completely free
+  
+
+  
+
+    
+      
+      
+    
+
+    <form>
+
+      
+        
+          First Name
+          
+            
+          
+        
+        
+          Last Name
+          
+            
+          
+        
+      
+
+      
+        Email Address
+        
+          
+        
+      
+
+      
+        Phone Number (Optional)
+        
+          
+        
+      
+
+      
+        I am a...
+        
+          
+            -- Select your role --
+            Patient - Book appointments
+            Doctor - Manage patients
+          
+        
+      
+
+      
+        
+          Password
+          
+            
+            👁
+          
+          
+        
+        
+          Confirm Password
+          
+            
+            👁
+          
+        
+      
+
+      
+        
+        I agree to the Terms of Service and Privacy Policy
+      
+
+      
+        🚀
+        Create My Account
+        
+      
+
+    </form>
+
+    
+      Already have an account? Sign in here
+      
+        ← Back to Home
+      
+    
+
+  
+
+
+<script>
+var API = 'http://localhost:4000/api';
+
+// Redirect if already logged in
+var tk = localStorage.getItem('hea_token');
+if (tk) {
+  var u = JSON.parse(localStorage.getItem('hea_user') || '{}');
+  goTo(u.role);
+}
+
+function goTo(role) {
+  if (role === 'admin')       window.location.href = 'admin-dashboard.html';
+  else if (role === 'doctor') window.location.href = 'doctor-dashboard.html';
+  else                        window.location.href = 'patient-dashboard.html';
+}
+
+function showAlert(msg, type) {
+  var a = document.getElementById('alert');
+  document.getElementById('a-icon').textContent = type === 'success' ? '✅' : '❌';
+  document.getElementById('a-msg').textContent  = msg;
+  a.className = 'alert show ' + type;
+  if (type === 'success') {
+    setTimeout(function(){ a.className = 'alert'; }, 5000);
+  }
+}
+
+function setLoad(on) {
+  document.getElementById('reg-btn').disabled         = on;
+  document.getElementById('b-icon').style.display     = on ? 'none' : 'inline';
+  document.getElementById('b-txt').textContent        = on ? 'Creating account...' : 'Create My Account';
+  document.getElementById('spin').style.display       = on ? 'block' : 'none';
+}
+
+// Password toggles
+document.getElementById('eye1').addEventListener('click', function() {
+  var i = document.getElementById('pwd');
+  i.type = i.type === 'password' ? 'text' : 'password';
+  this.textContent = i.type === 'password' ? '👁' : '🙈';
+});
+document.getElementById('eye2').addEventListener('click', function() {
+  var i = document.getElementById('cpwd');
+  i.type = i.type === 'password' ? 'text' : 'password';
+  this.textContent = i.type === 'password' ? '👁' : '🙈';
+});
+
+// Password strength
+document.getElementById('pwd').addEventListener('input', function() {
+  var v = this.value;
+  var s = 0;
+  if (v.length >= 6)           s++;
+  if (v.length >= 10)          s++;
+  if (/[A-Z]/.test(v))        s++;
+  if (/[0-9]/.test(v))        s++;
+  if (/[^A-Za-z0-9]/.test(v)) s++;
+  var labels = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Very Strong'];
+  var colors = ['', '#ef4444', '#f59e0b', '#3b82f6', '#10b981', '#059669'];
+  var el = document.getElementById('strength');
+  el.textContent = v ? 'Strength: ' + (labels[s] || '') : '';
+  el.style.color = colors[s] || '';
+});
+
+// Form submit
+document.getElementById('reg-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  var fname = document.getElementById('fname').value.trim();
+  var lname = document.getElementById('lname').value.trim();
+  var email = document.getElementById('email').value.trim();
+  var phone = document.getElementById('phone').value.trim();
+  var role  = document.getElementById('role').value;
+  var pwd   = document.getElementById('pwd').value;
+  var cpwd  = document.getElementById('cpwd').value;
+  var terms = document.getElementById('terms').checked;
+
+  // Validations
+  if (!fname || !lname) {
+    return showAlert('Please enter your first and last name', 'error');
+  }
+  if (!email) {
+    return showAlert('Please enter your email address', 'error');
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return showAlert('Please enter a valid email address', 'error');
+  }
+  if (!role) {
+    return showAlert('Please select your role (Patient or Doctor)', 'error');
+  }
+  if (!pwd || pwd.length < 6) {
+    return showAlert('Password must be at least 6 characters', 'error');
+  }
+  if (pwd !== cpwd) {
+    return showAlert('Passwords do not match', 'error');
+  }
+  if (!terms) {
+    return showAlert('Please accept the Terms of Service to continue', 'error');
+  }
+
+  setLoad(true);
+
+  fetch(API + '/auth/register', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      first_name: fname,
+      last_name:  lname,
+      name:       fname + ' ' + lname,
+      email:      email,
+      phone:      phone || null,
+      password:   pwd,
+      role:       role
+    })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.success) {
+      localStorage.setItem('hea_token', d.token);
+      localStorage.setItem('hea_user',  JSON.stringify(d.user));
+      showAlert('Welcome ' + d.user.name + '! Account created!', 'success');
+      document.getElementById('b-txt').textContent = '✅ Done! Redirecting...';
+      setTimeout(function() { goTo(d.user.role); }, 1200);
+    } else {
+      showAlert(d.message || 'Registration failed. Try again.', 'error');
+      setLoad(false);
+    }
+  })
+  .catch(function(err) {
+    showAlert('Cannot connect to server. Is backend running on port 4000?', 'error');
+    setLoad(false);
+    console.error('Register error:', err);
+  });
+});
+
+
+

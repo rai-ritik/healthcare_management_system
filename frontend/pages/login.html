@@ -1,0 +1,226 @@
+
+
+
+<meta>
+<meta>
+<title>Login - HEA Healthcare</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.card {
+  background: white;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+  overflow: hidden;
+}
+.top {
+  background: #1e40af;
+  padding: 36px 28px;
+  text-align: center;
+  color: white;
+}
+.top h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+.top p  { font-size: 14px; opacity: 0.85; }
+.body { padding: 28px; }
+.grp { margin-bottom: 18px; }
+.grp label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 7px;
+}
+.grp input {
+  width: 100%;
+  padding: 13px 14px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 15px;
+  font-family: Arial;
+  color: #111;
+  background: #f9fafb;
+  transition: border-color 0.2s;
+}
+.grp input:focus {
+  border-color: #3b82f6;
+  background: white;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+}
+.alert {
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  margin-bottom: 16px;
+  display: none;
+}
+.alert.show    { display: block; }
+.alert.success { background: #d1fae5; color: #065f46; }
+.alert.error   { background: #fee2e2; color: #991b1b; }
+.btn {
+  width: 100%;
+  padding: 14px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: Arial;
+  transition: all 0.2s;
+}
+.btn:hover { background: #1d4ed8; transform: translateY(-1px); }
+.btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+.demo {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 10px;
+  padding: 14px;
+  margin-top: 16px;
+  font-size: 13px;
+}
+.demo b   { display: block; font-weight: 700; color: #0369a1; margin-bottom: 8px; }
+.demo p   { color: #374151; margin-bottom: 6px; }
+.fill {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 3px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  margin-left: 8px;
+}
+.footer {
+  text-align: center;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
+  font-size: 14px;
+  color: #6b7280;
+}
+.footer a { color: #2563eb; font-weight: 700; text-decoration: none; }
+</style>
+
+
+
+
+
+  
+    🏥
+    HEA Healthcare
+    Sign in to your account
+    Team Synapse — Miranda · Ritik · Meliza · Nomaan
+  
+
+  
+
+    
+
+    <form>
+
+      
+        Email Address
+        
+      
+
+      
+        Password
+        
+      
+
+      Sign In
+
+    </form>
+
+    
+      Test Accounts
+      Admin: admin@hea.com / password
+        <button>Fill</button>
+      
+    
+
+    
+      No account? Register free
+    
+
+  
+
+
+<script>
+var API = "http://localhost:4000/api";
+
+var tk = localStorage.getItem("hea_token");
+if (tk) {
+  var u = JSON.parse(localStorage.getItem("hea_user") || "{}");
+  goTo(u.role);
+}
+
+function goTo(r) {
+  if (r === "admin")       location.href = "admin-dashboard.html";
+  else if (r === "doctor") location.href = "doctor-dashboard.html";
+  else                     location.href = "patient-dashboard.html";
+}
+
+function fill() {
+  document.getElementById("email").value    = "admin@hea.com";
+  document.getElementById("password").value = "password";
+}
+
+function msg(text, type) {
+  var a = document.getElementById("alert");
+  a.textContent = text;
+  a.className   = "alert show " + type;
+}
+
+document.getElementById("login-form").addEventListener("submit", function(e) {
+  e.preventDefault();
+  var email = document.getElementById("email").value.trim();
+  var pwd   = document.getElementById("password").value;
+  var btn   = document.getElementById("btn");
+
+  if (!email || !pwd) { return msg("Enter email and password", "error"); }
+
+  btn.disabled    = true;
+  btn.textContent = "Signing in...";
+
+  fetch(API + "/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: email, password: pwd })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.success) {
+      localStorage.setItem("hea_token", d.token);
+      localStorage.setItem("hea_user",  JSON.stringify(d.user));
+      msg("Welcome " + d.user.name + "! Redirecting...", "success");
+      btn.textContent = "Success!";
+      setTimeout(function() { goTo(d.user.role); }, 1000);
+    } else {
+      msg(d.message || "Login failed", "error");
+      btn.disabled    = false;
+      btn.textContent = "Sign In";
+    }
+  })
+  .catch(function() {
+    msg("Cannot connect to server on port 4000", "error");
+    btn.disabled    = false;
+    btn.textContent = "Sign In";
+  });
+});
+</script>
+
+

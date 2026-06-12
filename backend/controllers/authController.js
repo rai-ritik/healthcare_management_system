@@ -1,326 +1,310 @@
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const pool = require('../config/db');
+const jwt    = require('jsonwebtoken');
+const db     = require('../config/db');
 
-const createAuditLog = async (userId, action, entityType, entityId, status, req) => {
-    try {
-        await pool.execute(
-            `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, ip_address, status) 
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [userId || null, action, entityType || null, entityId || null, req.ip || 'unknown', status]
-        );
-    } catch (err) {
-        console.error('Audit log error:', err.message);
-    }
+const generateToken = (userId) => {
+  return jwt.sign(
+    { id: userId },
+    process.env.JWT_SECRET || 'hea_super_secret_key_2025',
+    { expiresIn: '24h' }
+  );
 };
 
+// ============================================
+// REGISTER
+// ============================================
 const register = async (req, res) => {
-    const connection = await pool.getConnection();
-    try {
-        const {
-            first_name,
-            last_name,
-            email,
-            password,
-            phone,
-            national_id,
-            role = 'patient',
-            date_of_birth,
-            gender,
-            blood_type,
-            address
-        } = req.body;
+  try {
+    const { first_name, last_name, name, email, password, role, phone } = req.body;
 
-        if (!first_name || !last_name || !email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: 'Name, email, and password are required.'
-            });
-        }
-
-        if (password.length < 8) {
-            return res.status(400).json({
-                success: false,
-                message: 'Password must be at least 8 characters.'
-            });
-        }
-
-        const [existingUsers] = await connection.execute(
-            'SELECT user_id FROM users WHERE email = ?',
-            [email]
-        );
-
-        if (existingUsers.length > 0) {
-            return res.status(409).json({
-                success: false,
-                message: 'Email already registered. Please use Login instead.'
-            });
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 12);
-
-        await connection.beginTransaction();
-
-        const [userResult] = await connection.execute(
-            `INSERT INTO users 
-             (first_name, last_name, email, password, phone, national_id, role)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [
-                first_name,
-                last_name,
-                email,
-                hashedPassword,
-                phone || null,
-                national_id || null,
-                role
-            ]
-        );
-
-        const userId = userResult.insertId;
-
-        if (role === 'patient') {
-            await connection.execute(
-                `INSERT INTO patients 
-                 (user_id, date_of_birth, gender, blood_type, address)
-                 VALUES (?, ?, ?, ?, ?)`,
-                [
-                    userId,
-                    date_of_birth || null,
-                    gender || null,
-                    blood_type || null,
-                    address || null
-                ]
-            );
-        }
-
-        await connection.commit();
-
-        await createAuditLog(userId, 'USER_REGISTERED', 'users', userId, 'success', req);
-
-        const token = jwt.sign(
-            { user_id: userId, email, role },
-            process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN }
-        );
-
-        res.status(201).json({
-            success: true,
-            message: 'Registration successful!',
-            data: {
-                user_id: userId,
-                first_name,
-                last_name,
-                email,
-                role
-            },
-            token
-        });
-
-    } catch (error) {
-        await connection.rollback();
-        console.error('Register error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Registration failed. Please try again.'
-        });
-    } finally {
-        connection.release();
+    // Accept either name or first_name/last_name
+    let fname = first_name;
+    let lname = last_name || '';
+    if (!fname && name) {
+      const parts = name.trim().split(' ');
+      fname = parts[0];
+      lname = parts.slice(1).join(' ') || '';
     }
+
+    if (!fname || !email || !password || !role) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide name, email, password and role'
+      });
+    }
+
+    const validRoles = ['patient', 'doctor', 'nurse', 'admin'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Role must be patient, doctor, nurse, or admin'
+      });
+    }
+
+    // Check existing email
+    const [existing] = await db.execute(
+      'SELECT user_id FROM users WHERE email = ?',
+      [email.toLowerCase()]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email already registered. Please login.'
+      });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insert user
+    const [result] = await db.execute(
+      `INSERT INTO users (first_name, last_name, email, password, phone, role, is_active, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, 1, NOW())`,
+      [fname, lname, email.toLowerCase(), hashedPassword, phone || null, role]
+    );
+
+    const userId = result.insertId;
+
+    // Create role record
+    if (role === 'patient') {
+      try {
+        await db.execute(
+          'INSERT INTO patients (user_id, created_at) VALUES (?, NOW())',
+          [userId]
+        );
+      } catch(e) { console.log('Patient record note:', e.message); }
+    } else if (role === 'doctor') {
+      try {
+        await db.execute(
+          `INSERT INTO doctors (user_id, specialization, created_at)
+           VALUES (?, 'General Practice', NOW())`,
+          [userId]
+        );
+      } catch(e) { console.log('Doctor record note:', e.message); }
+    }
+
+    // Audit log
+    try {
+      await db.execute(
+        `INSERT INTO audit_logs (user_id, action, table_name, description, created_at)
+         VALUES (?, 'REGISTER', 'users', 'New user registered', NOW())`,
+        [userId]
+      );
+    } catch(e) { /* optional */ }
+
+    const token = generateToken(userId);
+    const fullName = `${fname} ${lname}`.trim();
+
+    res.status(201).json({
+      success: true,
+      message: 'Account created successfully!',
+      token,
+      user: {
+        id:    userId,
+        name:  fullName,
+        first_name: fname,
+        last_name:  lname,
+        email: email.toLowerCase(),
+        role
+      }
+    });
+
+  } catch (error) {
+    console.error('Register error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Registration failed: ' + error.message
+    });
+  }
 };
 
+// ============================================
+// LOGIN
+// ============================================
 const login = async (req, res) => {
-    try {
-        const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-        if (!email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: 'Email and password are required.'
-            });
-        }
-
-        const [users] = await pool.execute(
-            `SELECT u.*, 
-                    p.patient_id,
-                    d.doctor_id, d.specialization, d.department
-             FROM users u
-             LEFT JOIN patients p ON u.user_id = p.user_id
-             LEFT JOIN doctors d ON u.user_id = d.user_id
-             WHERE u.email = ? AND u.is_active = TRUE`,
-            [email]
-        );
-
-        if (users.length === 0) {
-            await createAuditLog(null, 'LOGIN_FAILED', 'users', null, 'failed', req);
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid email or password.'
-            });
-        }
-
-        const user = users[0];
-
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-
-        if (!isPasswordValid) {
-            await createAuditLog(user.user_id, 'LOGIN_FAILED', 'users', user.user_id, 'failed', req);
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid email or password.'
-            });
-        }
-
-        const token = jwt.sign(
-            {
-                user_id: user.user_id,
-                email: user.email,
-                role: user.role
-            },
-            process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN }
-        );
-
-        await createAuditLog(user.user_id, 'USER_LOGIN', 'users', user.user_id, 'success', req);
-
-        const { password: _, ...userWithoutPassword } = user;
-
-        res.status(200).json({
-            success: true,
-            message: `Welcome back, ${user.first_name}!`,
-            data: userWithoutPassword,
-            token
-        });
-
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Login failed. Please try again.'
-        });
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide email and password'
+      });
     }
+
+    // Find user
+    const [users] = await db.execute(
+      'SELECT * FROM users WHERE email = ?',
+      [email.toLowerCase()]
+    );
+
+    if (users.length === 0) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    const user = users[0];
+
+    if (!user.is_active) {
+      return res.status(401).json({
+        success: false,
+        message: 'Account deactivated. Contact administrator.'
+      });
+    }
+
+    // Check password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // Audit log
+    try {
+      await db.execute(
+        `INSERT INTO audit_logs (user_id, action, table_name, description, created_at)
+         VALUES (?, 'LOGIN', 'users', 'User logged in', NOW())`,
+        [user.user_id]
+      );
+    } catch(e) { /* optional */ }
+
+    const token    = generateToken(user.user_id);
+    const fullName = `${user.first_name} ${user.last_name}`.trim();
+
+    res.status(200).json({
+      success: true,
+      message: 'Login successful!',
+      token,
+      user: {
+        id:         user.user_id,
+        name:       fullName,
+        first_name: user.first_name,
+        last_name:  user.last_name,
+        email:      user.email,
+        role:       user.role
+      }
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Login failed: ' + error.message
+    });
+  }
 };
 
+// ============================================
+// LOGOUT
+// ============================================
 const logout = async (req, res) => {
-    try {
-        await createAuditLog(
-            req.user.user_id,
-            'USER_LOGOUT',
-            'users',
-            req.user.user_id,
-            'success',
-            req
-        );
-        res.status(200).json({
-            success: true,
-            message: 'Logged out successfully.'
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Logout failed.'
-        });
-    }
+  res.status(200).json({
+    success: true,
+    message: 'Logged out successfully'
+  });
 };
 
+// ============================================
+// GET ME
+// ============================================
 const getMe = async (req, res) => {
-    try {
-        const [users] = await pool.execute(
-            `SELECT u.user_id, u.first_name, u.last_name, u.email, 
-                    u.phone, u.role, u.created_at,
-                    p.patient_id, p.date_of_birth, p.gender, p.blood_type,
-                    d.doctor_id, d.specialization, d.department
-             FROM users u
-             LEFT JOIN patients p ON u.user_id = p.user_id
-             LEFT JOIN doctors d ON u.user_id = d.user_id
-             WHERE u.user_id = ?`,
-            [req.user.user_id]
-        );
-
-        if (users.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found.'
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            data: users[0]
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to get profile.'
-        });
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'No token' });
     }
+
+    const token   = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'hea_super_secret_key_2025');
+
+    const [users] = await db.execute(
+      'SELECT user_id, first_name, last_name, email, role, created_at FROM users WHERE user_id = ?',
+      [decoded.id]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const u = users[0];
+    res.status(200).json({
+      success: true,
+      user: {
+        id:         u.user_id,
+        name:       `${u.first_name} ${u.last_name}`.trim(),
+        first_name: u.first_name,
+        last_name:  u.last_name,
+        email:      u.email,
+        role:       u.role
+      }
+    });
+
+  } catch (error) {
+    res.status(401).json({ success: false, message: 'Invalid token' });
+  }
 };
 
+// ============================================
+// CHANGE PASSWORD
+// ============================================
 const changePassword = async (req, res) => {
-    try {
-        const { old_password, new_password } = req.body;
+  try {
+    const { currentPassword, newPassword } = req.body;
 
-        if (!old_password || !new_password) {
-            return res.status(400).json({
-                success: false,
-                message: 'Both old and new passwords are required.'
-            });
-        }
-
-        if (new_password.length < 8) {
-            return res.status(400).json({
-                success: false,
-                message: 'New password must be at least 8 characters.'
-            });
-        }
-
-        const [users] = await pool.execute(
-            'SELECT password FROM users WHERE user_id = ?',
-            [req.user.user_id]
-        );
-
-        const isMatch = await bcrypt.compare(old_password, users[0].password);
-
-        if (!isMatch) {
-            return res.status(400).json({
-                success: false,
-                message: 'Old password is incorrect.'
-            });
-        }
-
-        const hashedNew = await bcrypt.hash(new_password, 12);
-
-        await pool.execute(
-            'UPDATE users SET password = ? WHERE user_id = ?',
-            [hashedNew, req.user.user_id]
-        );
-
-        await createAuditLog(
-            req.user.user_id,
-            'PASSWORD_CHANGED',
-            'users',
-            req.user.user_id,
-            'success',
-            req
-        );
-
-        res.status(200).json({
-            success: true,
-            message: 'Password changed successfully.'
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to change password.'
-        });
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide current and new password'
+      });
     }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters'
+      });
+    }
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Not authenticated' });
+    }
+
+    const token   = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'hea_super_secret_key_2025');
+
+    const [users] = await db.execute(
+      'SELECT * FROM users WHERE user_id = ?', [decoded.id]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, users[0].password);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await db.execute(
+      'UPDATE users SET password = ?, updated_at = NOW() WHERE user_id = ?',
+      [hashed, decoded.id]
+    );
+
+    res.status(200).json({ success: true, message: 'Password changed successfully!' });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed: ' + error.message });
+  }
 };
 
-module.exports = {
-    register,
-    login,
-    logout,
-    getMe,
-    changePassword
-};
+module.exports = { register, login, logout, getMe, changePassword };
