@@ -5,9 +5,9 @@ const pool = require('../config/db');
 const createAuditLog = async (userId, action, entityType, entityId, status, req) => {
     try {
         await pool.execute(
-            `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, ip_address, status)
+            `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, ip_address, status) 
              VALUES (?, ?, ?, ?, ?, ?)`,
-            [userId, action, entityType, entityId, req.ip || 'unknown', status]
+            [userId || null, action, entityType || null, entityId || null, req.ip || 'unknown', status]
         );
     } catch (err) {
         console.error('Audit log error:', err.message);
@@ -18,15 +18,23 @@ const register = async (req, res) => {
     const connection = await pool.getConnection();
     try {
         const {
-            first_name, last_name, email, password,
-            phone, national_id, role = 'patient',
-            date_of_birth, gender, blood_type, address
+            first_name,
+            last_name,
+            email,
+            password,
+            phone,
+            national_id,
+            role = 'patient',
+            date_of_birth,
+            gender,
+            blood_type,
+            address
         } = req.body;
 
         if (!first_name || !last_name || !email || !password) {
             return res.status(400).json({
                 success: false,
-                message: 'Name, email and password are required.'
+                message: 'Name, email, and password are required.'
             });
         }
 
@@ -37,37 +45,56 @@ const register = async (req, res) => {
             });
         }
 
-        const [existing] = await connection.execute(
-            'SELECT user_id FROM users WHERE email = ?', [email]
+        const [existingUsers] = await connection.execute(
+            'SELECT user_id FROM users WHERE email = ?',
+            [email]
         );
 
-        if (existing.length > 0) {
+        if (existingUsers.length > 0) {
             return res.status(409).json({
                 success: false,
-                message: 'Email already registered. Please login instead.'
+                message: 'Email already registered. Please use Login instead.'
             });
         }
 
         const hashedPassword = await bcrypt.hash(password, 12);
+
         await connection.beginTransaction();
 
         const [userResult] = await connection.execute(
-            `INSERT INTO users (first_name, last_name, email, password, phone, national_id, role)
+            `INSERT INTO users 
+             (first_name, last_name, email, password, phone, national_id, role)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [first_name, last_name, email, hashedPassword, phone, national_id, role]
+            [
+                first_name,
+                last_name,
+                email,
+                hashedPassword,
+                phone || null,
+                national_id || null,
+                role
+            ]
         );
 
         const userId = userResult.insertId;
 
         if (role === 'patient') {
             await connection.execute(
-                `INSERT INTO patients (user_id, date_of_birth, gender, blood_type, address)
+                `INSERT INTO patients 
+                 (user_id, date_of_birth, gender, blood_type, address)
                  VALUES (?, ?, ?, ?, ?)`,
-                [userId, date_of_birth || null, gender || null, blood_type || null, address || null]
+                [
+                    userId,
+                    date_of_birth || null,
+                    gender || null,
+                    blood_type || null,
+                    address || null
+                ]
             );
         }
 
         await connection.commit();
+
         await createAuditLog(userId, 'USER_REGISTERED', 'users', userId, 'success', req);
 
         const token = jwt.sign(
@@ -79,7 +106,13 @@ const register = async (req, res) => {
         res.status(201).json({
             success: true,
             message: 'Registration successful!',
-            data: { user_id: userId, first_name, last_name, email, role },
+            data: {
+                user_id: userId,
+                first_name,
+                last_name,
+                email,
+                role
+            },
             token
         });
 
@@ -107,7 +140,9 @@ const login = async (req, res) => {
         }
 
         const [users] = await pool.execute(
-            `SELECT u.*, p.patient_id, d.doctor_id, d.specialization, d.department
+            `SELECT u.*, 
+                    p.patient_id,
+                    d.doctor_id, d.specialization, d.department
              FROM users u
              LEFT JOIN patients p ON u.user_id = p.user_id
              LEFT JOIN doctors d ON u.user_id = d.user_id
@@ -124,9 +159,10 @@ const login = async (req, res) => {
         }
 
         const user = users[0];
-        const isValid = await bcrypt.compare(password, user.password);
 
-        if (!isValid) {
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+
+        if (!isPasswordValid) {
             await createAuditLog(user.user_id, 'LOGIN_FAILED', 'users', user.user_id, 'failed', req);
             return res.status(401).json({
                 success: false,
@@ -135,7 +171,11 @@ const login = async (req, res) => {
         }
 
         const token = jwt.sign(
-            { user_id: user.user_id, email: user.email, role: user.role },
+            {
+                user_id: user.user_id,
+                email: user.email,
+                role: user.role
+            },
             process.env.JWT_SECRET,
             { expiresIn: process.env.JWT_EXPIRES_IN }
         );
@@ -163,22 +203,29 @@ const login = async (req, res) => {
 const logout = async (req, res) => {
     try {
         await createAuditLog(
-            req.user.user_id, 'USER_LOGOUT',
-            'users', req.user.user_id, 'success', req
+            req.user.user_id,
+            'USER_LOGOUT',
+            'users',
+            req.user.user_id,
+            'success',
+            req
         );
         res.status(200).json({
             success: true,
             message: 'Logged out successfully.'
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Logout failed.' });
+        res.status(500).json({
+            success: false,
+            message: 'Logout failed.'
+        });
     }
 };
 
 const getMe = async (req, res) => {
     try {
         const [users] = await pool.execute(
-            `SELECT u.user_id, u.first_name, u.last_name, u.email,
+            `SELECT u.user_id, u.first_name, u.last_name, u.email, 
                     u.phone, u.role, u.created_at,
                     p.patient_id, p.date_of_birth, p.gender, p.blood_type,
                     d.doctor_id, d.specialization, d.department
@@ -190,13 +237,22 @@ const getMe = async (req, res) => {
         );
 
         if (users.length === 0) {
-            return res.status(404).json({ success: false, message: 'User not found.' });
+            return res.status(404).json({
+                success: false,
+                message: 'User not found.'
+            });
         }
 
-        res.status(200).json({ success: true, data: users[0] });
+        res.status(200).json({
+            success: true,
+            data: users[0]
+        });
 
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to get profile.' });
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get profile.'
+        });
     }
 };
 
@@ -207,7 +263,7 @@ const changePassword = async (req, res) => {
         if (!old_password || !new_password) {
             return res.status(400).json({
                 success: false,
-                message: 'Both passwords are required.'
+                message: 'Both old and new passwords are required.'
             });
         }
 
@@ -232,23 +288,39 @@ const changePassword = async (req, res) => {
             });
         }
 
-        const hashed = await bcrypt.hash(new_password, 12);
+        const hashedNew = await bcrypt.hash(new_password, 12);
 
         await pool.execute(
             'UPDATE users SET password = ? WHERE user_id = ?',
-            [hashed, req.user.user_id]
+            [hashedNew, req.user.user_id]
         );
 
         await createAuditLog(
-            req.user.user_id, 'PASSWORD_CHANGED',
-            'users', req.user.user_id, 'success', req
+            req.user.user_id,
+            'PASSWORD_CHANGED',
+            'users',
+            req.user.user_id,
+            'success',
+            req
         );
 
-        res.status(200).json({ success: true, message: 'Password changed successfully.' });
+        res.status(200).json({
+            success: true,
+            message: 'Password changed successfully.'
+        });
 
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to change password.' });
+        res.status(500).json({
+            success: false,
+            message: 'Failed to change password.'
+        });
     }
 };
 
-module.exports = { register, login, logout, getMe, changePassword };
+module.exports = {
+    register,
+    login,
+    logout,
+    getMe,
+    changePassword
+};
