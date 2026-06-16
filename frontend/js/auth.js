@@ -4,6 +4,12 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
+  // Helper function to validate email strings locally before submission
+  function validateEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  }
+
   // ============================================
   // LOGIN FORM
   // ============================================
@@ -106,109 +112,12 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         ui.setLoading('register-btn', true);
 
+        // Payload structure aligns directly with what the backend expects
         const result = await api.post('/auth/register', {
-          name, email, password, role
+          name, 
+          email, 
+          password, 
+          role
         });
 
         if (result.success) {
-          auth.setSession(result.token, result.user);
-          ui.showAlert('Account created! Redirecting to dashboard...', 'success');
-
-          setTimeout(() => {
-            auth.redirectByRole(result.user.role);
-          }, 1000);
-        }
-
-      } catch (error) {
-        ui.showAlert(error.message || 'Registration failed. Try again.', 'error');
-      } finally {
-        ui.setLoading('register-btn', false);
-      }
-    });
-
-    // Password strength indicator
-    const pwdInput = document.getElementById('password');
-    const strengthBar = document.getElementById('pwd-strength');
-
-    if (pwdInput && strengthBar) {
-      pwdInput.addEventListener('input', () => {
-        const val = pwdInput.value;
-        let strength = 0;
-
-        if (val.length >= 6)  strength++;
-        if (val.length >= 10) strength++;
-        if (/[A-Z]/.test(val)) strength++;
-        if (/[0-9]/.test(val)) strength++;
-        if (/[^A-Za-z0-9]/.test(val)) strength++;
-
-        const levels = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Very Strong'];
-        const colors = ['', '#ef4444', '#f59e0b', '#3b82f6', '#10b981', '#059669'];
-
-        strengthBar.textContent = levels[strength] || '';
-        strengthBar.style.color = colors[strength] || '';
-      });
-    }
-  }
-
-  // ============================================
-  // LOGOUT BUTTON (on any page)
-  // ============================================
-  const logoutBtn = document.getElementById('logout-btn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-      try {
-        await api.post('/auth/logout');
-      } catch (e) {
-        // Silent fail - still logout
-      } finally {
-        auth.logout();
-      }
-    });
-  }
-
-  // ============================================
-  // CHANGE PASSWORD FORM
-  // ============================================
-  const changePwdForm = document.getElementById('change-password-form');
-  if (changePwdForm) {
-    changePwdForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const currentPwd = document.getElementById('current-password').value;
-      const newPwd     = document.getElementById('new-password').value;
-      const confirmPwd = document.getElementById('confirm-new-password').value;
-
-      if (!currentPwd || !newPwd || !confirmPwd) {
-        ui.showAlert('Please fill in all fields', 'error');
-        return;
-      }
-
-      if (newPwd.length < 6) {
-        ui.showAlert('New password must be at least 6 characters', 'error');
-        return;
-      }
-
-      if (newPwd !== confirmPwd) {
-        ui.showAlert('New passwords do not match', 'error');
-        return;
-      }
-
-      try {
-        ui.setLoading('change-pwd-btn', true);
-
-        const result = await api.post('/auth/change-password', {
-          currentPassword: currentPwd,
-          newPassword: newPwd
-        });
-
-        ui.showAlert('Password changed successfully!', 'success');
-        changePwdForm.reset();
-
-      } catch (error) {
-        ui.showAlert(error.message || 'Failed to change password', 'error');
-      } finally {
-        ui.setLoading('change-pwd-btn', false);
-      }
-    });
-  }
-});
