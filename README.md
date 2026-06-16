@@ -19,10 +19,10 @@
 
 | Member | Role |
 |--------|------|
-| 🧑‍💻 **Ritik Kumar Rai** | Full Stack Developer |
+| 🧑‍💻 **Ritik Kumar Rai** |Databse/Stack Developer |
 | 👩‍💻 **Miranda Duraku** | Frontend Developer |
 | 👩‍💻 **Meliza Bodurri** | Backend Developer |
-| 🧑‍💻 **Nomaan Munshi** | Database and Testing |
+| 🧑‍💻 **Nomaan Munshi** | Testing |
 
 ---
 
