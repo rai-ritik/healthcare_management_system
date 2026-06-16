@@ -69,12 +69,23 @@ const getDashboard = async (req, res) => {
         notifications: []
       }
     });
-
+await db.execute(
+  `INSERT INTO appointments
+   (patient_id, doctor_id, appointment_date, status)
+   VALUES (?, ?, ?, 'scheduled')`,
+  [patientId, doctorId, appointmentDate]
+);
   } catch (error) {
     console.error('Dashboard error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
+await db.execute(
+  `UPDATE appointments
+   SET status = 'cancelled'
+   WHERE appointment_id = ?`,
+  [appointmentId]
+);
 
 const getProfile = async (req, res) => {
   try {
