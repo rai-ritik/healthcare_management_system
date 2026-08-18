@@ -22,7 +22,6 @@
 | 🧑‍💻 **Ritik Kumar Rai** |Database/Stack Developer |
 | 👩‍💻 **Miranda Duraku** | Frontend Developer |
 | 👩‍💻 **Meliza Bodurri** | Backend Developer |
-| 🧑‍💻 **Nomaan Munshi** | Testing |
 
 ---
 
