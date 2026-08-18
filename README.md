@@ -79,9 +79,118 @@ Built as part of a university project with a focus on security, usability, and r
 
 ## 📁 Project Structure
 
-healthcare_management_system/ │ ├── 📁 backend/ │ ├── 📁 config/ │ │ └── db.js # MySQL database connection │ │ │ ├── 📁 controllers/ │ │ ├── authController.js # Register, Login, Logout │ │ ├── patientController.js # Patient dashboard and profile │ │ ├── doctorController.js # Doctor dashboard and schedule │ │ ├── adminController.js # Admin stats and management │ │ ├── appointmentController.js # Book, cancel, reschedule │ │ └── medicalRecordController.js # Medical records CRUD │ │ │ ├── 📁 middleware/ │ │ ├── authMiddleware.js # JWT token verification │ │ └── roleMiddleware.js # Role based access control │ │ │ ├── 📁 routes/ │ │ ├── authRoutes.js # /api/auth/* │ │ ├── patientRoutes.js # /api/patient/* │ │ ├── doctorRoutes.js # /api/doctor/* │ │ ├── adminRoutes.js # /api/admin/* │ │ ├── appointmentRoutes.js # /api/appointments/* │ │ └── medicalRoutes.js # /api/medical/* │ │ │ ├── 📁 scripts/ │ │ └── createAdmin.js # Create default admin account │ │ │ ├── 📁 utils/ │ │ └── encryption.js # AES-256 encrypt and decrypt │ │ │ ├── .env # Environment variables │ ├── server.js # Express app entry point │ └── package.json # Project dependencies │ ├── 📁 frontend/ │ ├── 📁 css/ │ │ ├── style.css # Global styles │ │ ├── forms.css # Form styles │ │ └── dashboard.css # Dashboard styles │ │ │ ├── 📁 js/ │ │ ├── utils.js # API helpers and utilities │ │ └── auth.js # Authentication functions │ │ │ └── 📁 pages/ │ ├── index.html # Landing page │ ├── login.html # Login page │ ├── register.html # Registration page │ ├── patient-dashboard.html # Patient home │ ├── doctor-dashboard.html # Doctor home │ ├── admin-dashboard.html # Admin home │ ├── appointments.html # Book appointments │ ├── medical-records.html # View records │ └── profile.html # Edit profile │ └── 📁 database/ └── schema.sql # Full database schema
-
----
+healthcare_management_system/
+│
+├── backend/
+│   ├── config/
+│   │   ├── db.js
+│   │   └── env.js
+│   │
+│   ├── controllers/
+│   │   ├── auth.controller.js
+│   │   ├── patient.controller.js
+│   │   ├── doctor.controller.js
+│   │   ├── admin.controller.js
+│   │   ├── appointment.controller.js
+│   │   └── medicalRecord.controller.js
+│   │
+│   ├── middleware/
+│   │   ├── auth.middleware.js
+│   │   ├── role.middleware.js
+│   │   ├── error.middleware.js
+│   │   └── validation.middleware.js
+│   │
+│   ├── models/
+│   │   ├── User.js
+│   │   ├── Patient.js
+│   │   ├── Doctor.js
+│   │   ├── Appointment.js
+│   │   └── MedicalRecord.js
+│   │
+│   ├── routes/
+│   │   ├── auth.routes.js
+│   │   ├── patient.routes.js
+│   │   ├── doctor.routes.js
+│   │   ├── admin.routes.js
+│   │   ├── appointment.routes.js
+│   │   └── medicalRecord.routes.js
+│   │
+│   ├── services/
+│   │   ├── auth.service.js
+│   │   ├── patient.service.js
+│   │   ├── doctor.service.js
+│   │   ├── appointment.service.js
+│   │   └── medicalRecord.service.js
+│   │
+│   ├── utils/
+│   │   ├── encryption.js
+│   │   ├── jwt.js
+│   │   ├── validators.js
+│   │   └── response.js
+│   │
+│   ├── validations/
+│   │   ├── auth.validation.js
+│   │   ├── appointment.validation.js
+│   │   └── medicalRecord.validation.js
+│   │
+│   ├── scripts/
+│   │   └── createAdmin.js
+│   │
+│   ├── app.js
+│   └── server.js
+│
+├── frontend/
+│   ├── assets/
+│   │   ├── css/
+│   │   │   ├── style.css
+│   │   │   ├── forms.css
+│   │   │   └── dashboard.css
+│   │   │
+│   │   └── js/
+│   │       ├── api.js
+│   │       ├── auth.js
+│   │       ├── utils.js
+│   │       └── dashboard.js
+│   │
+│   ├── pages/
+│   │   ├── auth/
+│   │   │   ├── login.html
+│   │   │   └── register.html
+│   │   │
+│   │   ├── patient/
+│   │   │   ├── dashboard.html
+│   │   │   └── profile.html
+│   │   │
+│   │   ├── doctor/
+│   │   │   └── dashboard.html
+│   │   │
+│   │   ├── admin/
+│   │   │   └── dashboard.html
+│   │   │
+│   │   └── appointments/
+│   │       ├── appointments.html
+│   │       └── medical-records.html
+│   │
+│   └── index.html
+│
+├── database/
+│   ├── schema.sql
+│   ├── seed.sql
+│   └── migrations/
+│
+├── tests/
+│   ├── auth.test.js
+│   ├── appointment.test.js
+│   └── medicalRecord.test.js
+│
+├── docs/
+│   └── API.md
+│
+├── .env
+├── .env.example
+├── .gitignore
+├── package.json
+└── README.md
 
 ## ⚙️ Installation and Setup
 
